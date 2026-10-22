@@ -34,6 +34,187 @@
   font-size: 0.8rem;
 }
 
+/* Liten fargeprikk for hvem som la til en vare */
+.member-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #adb5bd;
+  flex-shrink: 0;
+}
+
+/* Egen boks rundt skjemaet, så det skiller seg fra listen */
+.add-item-box {
+  background: #f1f4f9;
+  border: 1px solid #e1e6ef;
+  border-radius: 8px;
+  padding: 14px 16px 16px;
+}
+
+.add-item-box .form-control,
+.add-item-box .form-select {
+  background-color: #fff;
+}
+
+/* Overskrift for hver kategori i handlelisten */
+.category-heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin: 8px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Varenavn og antall. Streken over kjøpte varer tegnes som én
+   linje over hele bredden, så den ikke brytes mellom navn og antall */
+.item-name {
+  position: relative;
+  display: inline-block;
+}
+
+.item-name.done::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 1px;
+  background: currentColor;
+}
+
+/* Kommentar på en vare */
+.item-comment {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #b35900;
+  margin: 2px 0;
+}
+
+/* Bekreftelsesvinduet skal ligge over andre vinduer */
+.confirm-modal {
+  z-index: 1065;
+}
+
+.confirm-list {
+  text-align: left;
+  margin: 12px 0 0;
+  padding: 10px 12px 10px 30px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.modal-backdrop.show ~ .modal-backdrop.show {
+  z-index: 1060;
+}
+
 .dropdown-menu {
   min-width: 220px;
+}
+
+/* Mer luft på sidene på små skjermer */
+@media (max-width: 575.98px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  main .card-body {
+    padding: 18px;
+  }
+
+  .add-item-box {
+    padding: 14px;
+  }
+}
+
+/* Kategorimeny */
+.category-toggle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-menu {
+  width: 100%;
+  min-width: 200px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+}
+
+.category-icon {
+  width: 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.dropdown-item.active .category-icon {
+  color: inherit;
+}
+
+/* Mer luft på sidene på små skjermer */
+@media (max-width: 576px) {
+  .page-tabs .container,
+  .navbar .container,
+  main.container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .card-body {
+    padding: 20px 18px;
+  }
+
+  .add-item-box {
+    padding: 14px;
+  }
+}
+
+/* Meny for å velge ansvarlig */
+.member-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.member-menu {
+  width: 100%;
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+}
+
+/* Hvem som gjorde en oppgave */
+.chore-done-by {
+  color: #198754;
+}
+
+/* Mindre profilbilde i menyen, så feltet får samme høyde som de andre */
+.member-toggle .avatar.small {
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+}
+
+/* Faner under headeren */
+.page-tabs .nav-link {
+  color: #6c757d;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.page-tabs .nav-link.active {
+  color: #0d6efd;
+}
+
+.page-tabs .badge {
+  font-weight: 600;
+  color: #495057;
 }

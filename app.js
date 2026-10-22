@@ -621,6 +621,15 @@ const choresEmpty = document.getElementById("choresEmpty");
 const choresCount = document.getElementById("choresCount");
 const choresNoMember = document.getElementById("choresNoMember");
 const filterButtons = document.querySelectorAll("[data-filter]");
+const choreCommentInput = document.getElementById("choreCommentInput");
+
+// Elementer i vinduet for å endre en oppgave
+const editChoreModal = document.getElementById("editChoreModal");
+const editChoreForm = document.getElementById("editChoreForm");
+const editChoreTitle = document.getElementById("editChoreTitle");
+const editAssigneeInput = document.getElementById("editAssigneeInput");
+const editChoreComment = document.getElementById("editChoreComment");
+let editingChoreId = null;
 
 // Meny for å velge ansvarlig. Valgt medlem lagres i et skjult felt
 function setupMemberPicker(input) {
@@ -674,6 +683,7 @@ function setupMemberPicker(input) {
 }
 
 const assigneePicker = setupMemberPicker(assigneeInput);
+const editAssigneePicker = setupMemberPicker(editAssigneeInput);
 let assigneeChosen = false;
 
 function renderChores() {
@@ -685,6 +695,7 @@ function renderChores() {
   // Ansvarlig er som standard den som er logget inn, til man velger noe annet
   if (!assigneeChosen && current) assigneeInput.value = current.id;
   assigneePicker.refresh();
+  editAssigneePicker.refresh();
 
   filterButtons.forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.filter === choreFilter);
@@ -739,6 +750,17 @@ function createChoreItem(chore) {
   title.textContent = chore.title;
   text.appendChild(title);
 
+  // Kommentar vises under tittelen hvis den finnes
+  if (chore.comment) {
+    const comment = document.createElement("div");
+    comment.className = "item-comment small";
+    comment.innerHTML = '<i class="bi bi-chat-left-text"></i>';
+    const commentText = document.createElement("span");
+    commentText.textContent = chore.comment;
+    comment.appendChild(commentText);
+    text.appendChild(comment);
+  }
+
   if (chore.assignedTo) {
     text.appendChild(
       memberLine(chore.assignedTo, chore.assignedToName, chore.assignedToColor,
@@ -751,6 +773,14 @@ function createChoreItem(chore) {
     text.appendChild(line);
   }
 
+  // Viser hvem som sist endret oppgaven
+  if (chore.updatedAt) {
+    const updatedLine = memberLine(chore.updatedBy, chore.updatedByName, chore.updatedByColor,
+      (name) => `Endret av ${name} · ${formatDate(chore.updatedAt)}`, "text-muted");
+    updatedLine.title = new Date(chore.updatedAt).toLocaleString("nb-NO");
+    text.appendChild(updatedLine);
+  }
+
   // Viser hvem som gjorde oppgaven og når
   if (chore.done) {
     const doneLine = memberLine(chore.doneBy, chore.doneByName, chore.doneByColor,
@@ -761,16 +791,27 @@ function createChoreItem(chore) {
 
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
-  removeBtn.className = "btn btn-sm btn-outline-secondary flex-shrink-0";
+  removeBtn.className = "btn btn-sm btn-outline-secondary";
   removeBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
   removeBtn.title = `Slett ${chore.title}`;
   removeBtn.addEventListener("click", () => deleteChore(chore.id));
 
-  li.append(checkbox, text, removeBtn);
+  const editBtn = document.createElement("button");
+  editBtn.type = "button";
+  editBtn.className = "btn btn-sm btn-outline-primary";
+  editBtn.innerHTML = '<i class="bi bi-pencil"></i><span class="d-none d-sm-inline"> Endre</span>';
+  editBtn.title = `Endre ${chore.title}`;
+  editBtn.addEventListener("click", () => openEditChore(chore.id));
+
+  const actions = document.createElement("div");
+  actions.className = "d-flex gap-1 flex-shrink-0";
+  actions.append(editBtn, removeBtn);
+
+  li.append(checkbox, text, actions);
   return li;
 }
 
-function addChore(title, assignedTo) {
+function addChore(title, assignedTo, comment = "") {
   const trimmed = title.trim();
   const current = getCurrentMember();
   if (!trimmed || !current) return;
@@ -779,6 +820,7 @@ function addChore(title, assignedTo) {
   chores.push({
     id: Date.now().toString(),
     title: trimmed,
+    comment: comment.trim(),
     assignedTo: assignee ? assignee.id : "",
     // Navn og farge lagres i tilfelle medlemmet fjernes senere
     assignedToName: assignee ? assignee.name : "",
@@ -810,6 +852,50 @@ function toggleChore(id) {
   render();
 }
 
+function openEditChore(id) {
+  const chore = chores.find((c) => c.id === id);
+  if (!chore) return;
+  editingChoreId = id;
+  editChoreTitle.value = chore.title;
+  editChoreComment.value = chore.comment || "";
+  editAssigneePicker.set(chore.assignedTo);
+  bootstrap.Modal.getOrCreateInstance(editChoreModal).show();
+}
+
+editChoreModal.addEventListener("shown.bs.modal", () => editChoreTitle.focus());
+
+editChoreForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const chore = chores.find((c) => c.id === editingChoreId);
+  const title = editChoreTitle.value.trim();
+  if (!chore || !title) return;
+
+  const assignee = members.find((m) => m.id === editAssigneeInput.value);
+  // Er den ansvarlige fjernet fra husholdningen, beholdes den gamle verdien
+  // med mindre noen har valgt en ny person i menyen
+  const removedAssignee =
+    chore.assignedTo && !members.some((m) => m.id === chore.assignedTo) && !assignee;
+
+  const changes = {
+    title,
+    comment: editChoreComment.value.trim(),
+    assignedTo: removedAssignee ? chore.assignedTo : assignee ? assignee.id : "",
+  };
+
+  const changed = Object.keys(changes).some((key) => changes[key] !== (chore[key] || ""));
+  if (changed) {
+    if (!removedAssignee) {
+      chore.assignedToName = assignee ? assignee.name : "";
+      chore.assignedToColor = assignee ? assignee.color : "";
+    }
+    Object.assign(chore, changes);
+    markUpdated(chore, getCurrentMember());
+  }
+
+  bootstrap.Modal.getInstance(editChoreModal).hide();
+  render();
+});
+
 async function deleteChore(id) {
   const chore = chores.find((c) => c.id === id);
   if (!chore) return;
@@ -825,8 +911,9 @@ assigneeInput.closest(".member-picker").addEventListener("click", (event) => {
 
 choreForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  addChore(choreInput.value, assigneeInput.value);
+  addChore(choreInput.value, assigneeInput.value, choreCommentInput.value);
   choreInput.value = "";
+  choreCommentInput.value = "";
   choreInput.focus();
 });
 
