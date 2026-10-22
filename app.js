@@ -286,6 +286,7 @@ function renderMemberList() {
   memberList.innerHTML = "";
   emptyText.hidden = members.length > 0;
   memberList.hidden = members.length === 0;
+  document.getElementById("colorHint").hidden = members.length === 0;
 
   members.forEach((m) => {
     const li = document.createElement("li");
@@ -295,7 +296,24 @@ function renderMemberList() {
     name.className = "flex-grow-1";
     name.textContent = m.name;
 
-    li.append(createAvatar(m, true), name);
+    // Fargesirkelen er en knapp for å bytte farge. Et usynlig fargefelt
+    // ligger over sirkelen, så nettleserens fargevelger åpnes ved klikk
+    const colorPicker = document.createElement("label");
+    colorPicker.className = "avatar-color";
+    colorPicker.title = `Bytt farge for ${m.name}`;
+    const avatar = createAvatar(m, true);
+    const edit = document.createElement("i");
+    edit.className = "bi bi-pencil-fill avatar-edit";
+    const colorField = document.createElement("input");
+    colorField.type = "color";
+    colorField.value = m.color;
+    colorField.setAttribute("aria-label", `Bytt farge for ${m.name}`);
+    // Viser fargen mens man velger, og lagrer når man er ferdig
+    colorField.addEventListener("input", () => (avatar.style.background = colorField.value));
+    colorField.addEventListener("change", () => changeMemberColor(m.id, colorField.value));
+    colorPicker.append(avatar, edit, colorField);
+
+    li.append(colorPicker, name);
 
     if (m.id === currentId) {
       const badge = document.createElement("span");
@@ -314,6 +332,13 @@ function renderMemberList() {
     li.appendChild(removeBtn);
     memberList.appendChild(li);
   });
+}
+
+function changeMemberColor(id, color) {
+  const member = members.find((m) => m.id === id);
+  if (!member || member.color === color) return;
+  member.color = color;
+  render();
 }
 
 function addMember(name, color) {
