@@ -50,15 +50,42 @@ const editCategory = document.getElementById("editCategory");
 const editComment = document.getElementById("editComment");
 let editingId = null;
 
-[categoryInput, editCategory].forEach((select) => {
+// Lager en kategorimeny med ikoner. Valgt kategori lagres i et skjult felt,
+// så resten av koden kan lese den med .value som før
+function setupCategoryPicker(input) {
+  const root = input.closest(".category-picker");
+  const button = root.querySelector(".category-toggle");
+  const menu = root.querySelector(".category-menu");
+
   CATEGORIES.forEach((c) => {
-    const option = document.createElement("option");
-    option.value = c.id;
-    option.textContent = c.name;
-    select.appendChild(option);
+    const li = document.createElement("li");
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "dropdown-item d-flex align-items-center gap-2";
+    item.dataset.id = c.id;
+    item.innerHTML = `<i class="bi ${c.icon} category-icon"></i>`;
+    item.append(c.name);
+    item.addEventListener("click", () => set(c.id));
+    li.appendChild(item);
+    menu.appendChild(li);
   });
-});
-categoryInput.value = "annet";
+
+  function set(id) {
+    const category = CATEGORIES.find((c) => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
+    input.value = category.id;
+    button.innerHTML = `<i class="bi ${category.icon} category-icon me-2"></i>`;
+    button.append(category.name);
+    menu.querySelectorAll(".dropdown-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.id === category.id);
+    });
+  }
+
+  set(input.value);
+  return { set };
+}
+
+const addCategoryPicker = setupCategoryPicker(categoryInput);
+const editCategoryPicker = setupCategoryPicker(editCategory);
 const shoppingList = document.getElementById("shoppingList");
 const shoppingEmpty = document.getElementById("shoppingEmpty");
 const shoppingCount = document.getElementById("shoppingCount");
@@ -77,6 +104,11 @@ let shoppingItems = load(SHOPPING_KEY, []).map((item) => ({
   createdAt: Number(item.id) || Date.now(),
   ...item,
 }));
+
+// Husarbeid
+const CHORES_KEY = "husholdning_husarbeid";
+let chores = load(CHORES_KEY, []);
+let choreFilter = "alle";
 
 // Formaterer et tidspunkt, f.eks. «i dag 21:22», «i går 18:05» eller «20. okt. 14:10»
 function formatDate(timestamp) {
@@ -109,6 +141,7 @@ function save() {
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
     localStorage.setItem(CURRENT_KEY, JSON.stringify(currentId));
     localStorage.setItem(SHOPPING_KEY, JSON.stringify(shoppingItems));
+    localStorage.setItem(CHORES_KEY, JSON.stringify(chores));
   } catch {
     alert("Kunne ikke lagre data i nettleseren.");
   }
@@ -174,6 +207,8 @@ function render() {
   renderProfileMenu();
   renderMemberList();
   renderShoppingList();
+  renderChores();
+  renderTabCounts();
   save();
 }
 
@@ -503,7 +538,7 @@ function openEditItem(id) {
   editingId = id;
   editName.value = item.name;
   editQuantity.value = item.quantity;
-  editCategory.value = item.category;
+  editCategoryPicker.set(item.category);
   editComment.value = item.comment;
   bootstrap.Modal.getOrCreateInstance(editItemModal).show();
 }
@@ -576,6 +611,270 @@ shoppingForm.addEventListener("submit", (event) => {
 
 clearCheckedBtn.addEventListener("click", clearChecked);
 
+// ===== Husarbeid =====
+
+const choreForm = document.getElementById("choreForm");
+const choreInput = document.getElementById("choreInput");
+const assigneeInput = document.getElementById("assigneeInput");
+const choresList = document.getElementById("choresList");
+const choresEmpty = document.getElementById("choresEmpty");
+const choresCount = document.getElementById("choresCount");
+const choresNoMember = document.getElementById("choresNoMember");
+const filterButtons = document.querySelectorAll("[data-filter]");
+
+// Meny for å velge ansvarlig. Valgt medlem lagres i et skjult felt
+function setupMemberPicker(input) {
+  const root = input.closest(".member-picker");
+  const button = root.querySelector(".member-toggle");
+  const menu = root.querySelector(".member-menu");
+
+  function set(id) {
+    const member = members.find((m) => m.id === id);
+    input.value = member ? member.id : "";
+    button.innerHTML = "";
+    if (member) {
+      const name = document.createElement("span");
+      name.textContent = member.name;
+      button.append(createAvatar(member, true), name);
+    } else {
+      button.innerHTML = '<i class="bi bi-person-dash text-muted"></i>';
+      button.append("Ikke tildelt");
+    }
+    menu.querySelectorAll(".dropdown-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.id === input.value);
+    });
+  }
+
+  // Bygger listen på nytt når medlemmer legges til eller fjernes
+  function refresh() {
+    menu.innerHTML = "";
+    const options = [{ id: "", name: "Ikke tildelt" }, ...members];
+    options.forEach((m) => {
+      const li = document.createElement("li");
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "dropdown-item d-flex align-items-center gap-2";
+      item.dataset.id = m.id;
+      if (m.id) {
+        item.appendChild(createAvatar(m, true));
+      } else {
+        item.innerHTML = '<i class="bi bi-person-dash"></i>';
+      }
+      const name = document.createElement("span");
+      name.textContent = m.name;
+      item.appendChild(name);
+      item.addEventListener("click", () => set(m.id));
+      li.appendChild(item);
+      menu.appendChild(li);
+    });
+    set(input.value);
+  }
+
+  return { set, refresh };
+}
+
+const assigneePicker = setupMemberPicker(assigneeInput);
+let assigneeChosen = false;
+
+function renderChores() {
+  const current = getCurrentMember();
+  const hasMember = Boolean(current);
+  [...choreForm.elements].forEach((el) => (el.disabled = !hasMember));
+  choresNoMember.hidden = hasMember;
+
+  // Ansvarlig er som standard den som er logget inn, til man velger noe annet
+  if (!assigneeChosen && current) assigneeInput.value = current.id;
+  assigneePicker.refresh();
+
+  filterButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.filter === choreFilter);
+    btn.setAttribute("aria-pressed", btn.dataset.filter === choreFilter);
+    if (btn.dataset.filter === "mine") btn.disabled = !hasMember;
+  });
+
+  const visible = chores
+    .filter((c) => choreFilter === "alle" || (current && c.assignedTo === current.id))
+    .sort((a, b) => a.done - b.done || a.createdAt - b.createdAt);
+
+  choresList.innerHTML = "";
+  visible.forEach((chore) => choresList.appendChild(createChoreItem(chore)));
+
+  choresEmpty.hidden = visible.length > 0;
+  choresEmpty.textContent =
+    choreFilter === "mine" ? "Du har ingen oppgaver." : "Ingen oppgaver ennå.";
+
+  choresCount.textContent = chores.filter((c) => !c.done).length;
+}
+
+// Lager en linje med fargeprikk og tekst for et medlem
+function memberLine(memberId, fallbackName, fallbackColor, text, className = "") {
+  const line = document.createElement("div");
+  line.className = `small d-flex align-items-baseline gap-1 ${className}`;
+  const member = members.find((m) => m.id === memberId);
+  const dot = document.createElement("span");
+  dot.className = "member-dot";
+  dot.style.background = member ? member.color : fallbackColor || "";
+  const label = document.createElement("span");
+  label.textContent = text(member ? member.name : fallbackName);
+  line.append(dot, label);
+  return line;
+}
+
+function createChoreItem(chore) {
+  const li = document.createElement("li");
+  li.className = "list-group-item d-flex align-items-center gap-3 px-0";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "form-check-input mt-0 flex-shrink-0";
+  checkbox.checked = chore.done;
+  checkbox.setAttribute("aria-label", `Gjort: ${chore.title}`);
+  checkbox.addEventListener("change", () => toggleChore(chore.id));
+
+  const text = document.createElement("div");
+  text.className = "flex-grow-1";
+
+  const title = document.createElement("div");
+  title.className = chore.done ? "item-name done text-muted" : "item-name";
+  title.textContent = chore.title;
+  text.appendChild(title);
+
+  if (chore.assignedTo) {
+    text.appendChild(
+      memberLine(chore.assignedTo, chore.assignedToName, chore.assignedToColor,
+        (name) => `Ansvarlig: ${name}`, "text-muted")
+    );
+  } else {
+    const line = document.createElement("div");
+    line.className = "small text-muted";
+    line.textContent = "Ikke tildelt";
+    text.appendChild(line);
+  }
+
+  // Viser hvem som gjorde oppgaven og når
+  if (chore.done) {
+    const doneLine = memberLine(chore.doneBy, chore.doneByName, chore.doneByColor,
+      (name) => `Gjort av ${name} · ${formatDate(chore.doneAt)}`, "chore-done-by");
+    doneLine.title = new Date(chore.doneAt).toLocaleString("nb-NO");
+    text.appendChild(doneLine);
+  }
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "btn btn-sm btn-outline-secondary flex-shrink-0";
+  removeBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+  removeBtn.title = `Slett ${chore.title}`;
+  removeBtn.addEventListener("click", () => deleteChore(chore.id));
+
+  li.append(checkbox, text, removeBtn);
+  return li;
+}
+
+function addChore(title, assignedTo) {
+  const trimmed = title.trim();
+  const current = getCurrentMember();
+  if (!trimmed || !current) return;
+
+  const assignee = members.find((m) => m.id === assignedTo);
+  chores.push({
+    id: Date.now().toString(),
+    title: trimmed,
+    assignedTo: assignee ? assignee.id : "",
+    // Navn og farge lagres i tilfelle medlemmet fjernes senere
+    assignedToName: assignee ? assignee.name : "",
+    assignedToColor: assignee ? assignee.color : "",
+    done: false,
+    createdAt: Date.now(),
+    createdBy: current.id,
+  });
+  render();
+}
+
+function toggleChore(id) {
+  const chore = chores.find((c) => c.id === id);
+  const current = getCurrentMember();
+  if (!chore) return;
+
+  chore.done = !chore.done;
+  if (chore.done && current) {
+    chore.doneBy = current.id;
+    chore.doneByName = current.name;
+    chore.doneByColor = current.color;
+    chore.doneAt = Date.now();
+  } else {
+    delete chore.doneBy;
+    delete chore.doneByName;
+    delete chore.doneByColor;
+    delete chore.doneAt;
+  }
+  render();
+}
+
+async function deleteChore(id) {
+  const chore = chores.find((c) => c.id === id);
+  if (!chore) return;
+  const ok = await confirmAction(`«${chore.title}» blir slettet fra husarbeid.`);
+  if (!ok) return;
+  chores = chores.filter((c) => c.id !== id);
+  render();
+}
+
+assigneeInput.closest(".member-picker").addEventListener("click", (event) => {
+  if (event.target.closest(".dropdown-item")) assigneeChosen = true;
+});
+
+choreForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  addChore(choreInput.value, assigneeInput.value);
+  choreInput.value = "";
+  choreInput.focus();
+});
+
+filterButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    choreFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+// ===== Sider =====
+
+// Viser én side om gangen ut fra adressen, f.eks. index.html#husarbeid.
+// Da fungerer tilbakeknappen, og man kan lenke rett til en side.
+const PAGES = {
+  handleliste: "Handleliste",
+  husarbeid: "Husarbeid",
+};
+const pageLinks = document.querySelectorAll("[data-page]");
+const tabShoppingCount = document.getElementById("tabShoppingCount");
+const tabChoresCount = document.getElementById("tabChoresCount");
+
+function showPage() {
+  const requested = location.hash.slice(1);
+  const page = PAGES[requested] ? requested : "handleliste";
+
+  document.querySelectorAll(".page").forEach((section) => {
+    section.hidden = section.id !== page;
+  });
+
+  pageLinks.forEach((link) => {
+    const active = link.dataset.page === page;
+    link.classList.toggle("active", active);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+
+  document.title = `${PAGES[page]} · Husholdningen`;
+}
+
+// Antall som gjenstår vises også i fanene
+function renderTabCounts() {
+  tabShoppingCount.textContent = shoppingItems.filter((i) => !i.done).length;
+  tabChoresCount.textContent = chores.filter((c) => !c.done).length;
+}
+
+window.addEventListener("hashchange", showPage);
+
 // Setter fokus på navnefeltet når vinduet åpnes
 memberModal.addEventListener("shown.bs.modal", () => nameInput.focus());
 
@@ -586,4 +885,5 @@ memberForm.addEventListener("submit", (event) => {
   nameInput.focus();
 });
 
+showPage();
 render();

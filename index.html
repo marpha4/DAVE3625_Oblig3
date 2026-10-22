@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-light">
-  <nav class="navbar bg-white border-bottom shadow-sm">
+  <nav class="navbar bg-white border-bottom">
     <div class="container">
       <span class="navbar-brand fw-semibold d-flex align-items-center gap-2">
         <i class="bi bi-house-door-fill text-primary fs-4"></i>
@@ -39,11 +39,27 @@
     </div>
   </nav>
 
+  <!-- Faner for å bytte mellom sidene -->
+  <div class="page-tabs bg-white border-bottom shadow-sm">
+    <div class="container">
+      <nav class="nav nav-underline" aria-label="Sider">
+        <a class="nav-link" href="#handleliste" data-page="handleliste">
+          <i class="bi bi-cart3 me-1"></i>Handleliste
+          <span id="tabShoppingCount" class="badge rounded-pill text-bg-light border ms-1">0</span>
+        </a>
+        <a class="nav-link" href="#husarbeid" data-page="husarbeid">
+          <i class="bi bi-check2-square me-1"></i>Husarbeid
+          <span id="tabChoresCount" class="badge rounded-pill text-bg-light border ms-1">0</span>
+        </a>
+      </nav>
+    </div>
+  </div>
+
   <main class="container py-4" style="max-width: 720px;">
     <h2 id="welcomeText" class="h4 mb-4">Velkommen</h2>
 
     <!-- Handleliste -->
-    <section class="card border-0 shadow-sm">
+    <section id="handleliste" class="page card border-0 shadow-sm">
       <div class="card-body">
         <div class="d-flex align-items-center gap-2 mb-3">
           <i class="bi bi-cart3 fs-5 text-primary"></i>
@@ -63,8 +79,12 @@
             <input type="number" id="quantityInput" class="form-control" value="1" min="1" max="99" required>
           </div>
           <div class="col-8 col-md-4">
-            <label for="categoryInput" class="form-label small fw-semibold mb-1">Kategori</label>
-            <select id="categoryInput" class="form-select"></select>
+            <label for="categoryBtn" class="form-label small fw-semibold mb-1">Kategori</label>
+            <div class="dropdown category-picker">
+              <button type="button" id="categoryBtn" class="form-select text-start category-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
+              <ul class="dropdown-menu category-menu shadow"></ul>
+              <input type="hidden" id="categoryInput" value="annet">
+            </div>
           </div>
           <div class="col-12">
             <label for="commentInput" class="form-label small fw-semibold mb-1">Kommentar <span class="fw-normal text-muted">(valgfritt)</span></label>
@@ -87,6 +107,49 @@
             <i class="bi bi-trash"></i> Fjern avkryssede
           </button>
         </div>
+      </div>
+    </section>
+
+    <!-- Husarbeid -->
+    <section id="husarbeid" class="page card border-0 shadow-sm" hidden>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-check2-square fs-5 text-primary"></i>
+          <h3 class="h5 mb-0 flex-grow-1">Husarbeid</h3>
+          <span class="small text-muted">Oppgaver igjen: <strong id="choresCount" class="text-body">0</strong></span>
+        </div>
+
+        <div class="add-item-box mb-4">
+          <h4 class="h6 mb-2">Legg til oppgave</h4>
+          <form id="choreForm" class="row g-2 align-items-end">
+            <div class="col-12 col-md-7">
+              <label for="choreInput" class="form-label small fw-semibold mb-1">Oppgave</label>
+              <input type="text" id="choreInput" class="form-control" placeholder="F.eks. vaske badet" maxlength="60" required>
+            </div>
+            <div class="col-12 col-md-5">
+              <label for="assigneeBtn" class="form-label small fw-semibold mb-1">Ansvarlig</label>
+              <div class="dropdown member-picker">
+                <button type="button" id="assigneeBtn" class="form-select text-start member-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                <ul class="dropdown-menu member-menu shadow"></ul>
+                <input type="hidden" id="assigneeInput" value="">
+              </div>
+            </div>
+            <div class="col-12 d-grid d-sm-flex justify-content-sm-center mt-3">
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-plus-lg"></i> Legg til oppgaven
+              </button>
+            </div>
+          </form>
+          <p id="choresNoMember" class="text-muted small mt-2 mb-0" hidden>Legg til et medlem først for å bruke husarbeid.</p>
+        </div>
+
+        <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Filtrer oppgaver">
+          <button type="button" class="btn btn-outline-primary" data-filter="alle">Alle</button>
+          <button type="button" class="btn btn-outline-primary" data-filter="mine">Mine oppgaver</button>
+        </div>
+
+        <ul id="choresList" class="list-group list-group-flush"></ul>
+        <p id="choresEmpty" class="text-muted text-center my-3"></p>
       </div>
     </section>
   </main>
@@ -140,8 +203,12 @@
               <input type="number" id="editQuantity" class="form-control" min="1" max="99" required>
             </div>
             <div class="col-8">
-              <label for="editCategory" class="form-label small fw-semibold mb-1">Kategori</label>
-              <select id="editCategory" class="form-select"></select>
+              <label for="editCategoryBtn" class="form-label small fw-semibold mb-1">Kategori</label>
+              <div class="dropdown category-picker">
+                <button type="button" id="editCategoryBtn" class="form-select text-start category-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                <ul class="dropdown-menu category-menu shadow"></ul>
+                <input type="hidden" id="editCategory" value="annet">
+              </div>
             </div>
           </div>
           <div class="mt-3">
