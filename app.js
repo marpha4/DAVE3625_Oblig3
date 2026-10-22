@@ -99,12 +99,21 @@ function save() {
 const confirmModalEl = document.getElementById("confirmModal");
 const confirmMessage = document.getElementById("confirmMessage");
 const confirmOk = document.getElementById("confirmOk");
+const confirmList = document.getElementById("confirmList");
 const confirmModal = new bootstrap.Modal(confirmModalEl);
 
-function confirmAction(message, okText = "Slett") {
+// items er en valgfri liste med tekst som vises under meldingen
+function confirmAction(message, okText = "Slett", items = []) {
   return new Promise((resolve) => {
     let confirmed = false;
     confirmMessage.textContent = message;
+    confirmList.innerHTML = "";
+    confirmList.hidden = items.length === 0;
+    items.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      confirmList.appendChild(li);
+    });
     confirmOk.textContent = okText;
 
     const onOk = () => {
@@ -315,7 +324,7 @@ function renderShoppingList() {
   const remaining = shoppingItems.filter((i) => !i.done).length;
   const checked = shoppingItems.length - remaining;
   shoppingCount.textContent = remaining;
-  shoppingCount.title = `${remaining} varer igjen`;
+  shoppingCount.title = "Varer som ikke er kjøpt ennå";
   clearCheckedBtn.disabled = checked === 0;
 }
 
@@ -346,15 +355,15 @@ function createShoppingItem(item) {
   who.textContent = `Lagt til av ${member ? member.name : item.addedByName}`;
   addedBy.append(dot, who);
 
-  // Varenavn med antall til høyre
-  name.className = "d-flex align-items-baseline gap-2";
+  // Varenavn med antall til høyre. Streken settes på hele linjen
+  // slik at den går sammenhengende over både navn og antall
   const label = document.createElement("span");
   label.textContent = item.name;
   const qty = document.createElement("span");
   qty.className = "small text-muted text-nowrap";
   qty.textContent = `${item.quantity} stk`;
-  if (item.done) label.className = "text-decoration-line-through text-muted";
-  name.append(label, qty);
+  name.className = item.done ? "item-name done text-muted" : "item-name";
+  name.append(label, "\u00a0\u00a0", qty);
   text.appendChild(name);
 
   // Kommentar vises under navnet hvis den finnes
@@ -472,10 +481,15 @@ async function deleteItem(id) {
 }
 
 async function clearChecked() {
-  const count = shoppingItems.filter((i) => i.done).length;
+  const checked = shoppingItems.filter((i) => i.done);
+  const count = checked.length;
   if (count === 0) return;
-  const text = count === 1 ? "1 avkrysset vare" : `${count} avkryssede varer`;
-  const ok = await confirmAction(`${text} blir slettet fra handlelisten.`);
+  const text =
+    count === 1
+      ? "Denne avkryssede varen blir slettet:"
+      : `Disse ${count} avkryssede varene blir slettet:`;
+  const names = checked.map((i) => `${i.name} (${i.quantity} stk)`);
+  const ok = await confirmAction(text, "Slett", names);
   if (!ok) return;
   shoppingItems = shoppingItems.filter((i) => !i.done);
   render();

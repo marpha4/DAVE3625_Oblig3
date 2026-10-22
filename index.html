@@ -48,10 +48,12 @@
         <div class="d-flex align-items-center gap-2 mb-3">
           <i class="bi bi-cart3 fs-5 text-primary"></i>
           <h3 class="h5 mb-0 flex-grow-1">Handleliste</h3>
-          <span id="shoppingCount" class="badge rounded-pill text-bg-secondary">0</span>
+          <span class="small text-muted">Totalt antall varer: <strong id="shoppingCount" class="text-body">0</strong></span>
         </div>
 
-        <form id="shoppingForm" class="row g-2 align-items-end mb-3">
+        <div class="add-item-box mb-4">
+        <h4 class="h6 mb-2"><i class="bi bi-plus-circle me-1"></i>Legg til vare</h4>
+        <form id="shoppingForm" class="row g-2 align-items-end">
           <div class="col-12 col-md">
             <label for="itemInput" class="form-label small fw-semibold mb-1">Vare</label>
             <input type="text" id="itemInput" class="form-control" placeholder="Hva er tomt? F.eks. melk" maxlength="50" required>
@@ -74,7 +76,8 @@
             </button>
           </div>
         </form>
-        <p id="shoppingNoMember" class="text-muted small" hidden>Legg til et medlem først for å bruke handlelisten.</p>
+        <p id="shoppingNoMember" class="text-muted small mt-2 mb-0" hidden>Legg til et medlem først for å bruke handlelisten.</p>
+        </div>
 
         <div id="shoppingList"></div>
         <p id="shoppingEmpty" class="text-muted text-center my-3">Handlelisten er tom.</p>
@@ -156,12 +159,13 @@
 
   <!-- Bekreftelse før sletting -->
   <div class="modal fade confirm-modal" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-body text-center p-4">
           <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
           <h2 class="h5 mt-2" id="confirmModalLabel">Er du sikker?</h2>
           <p id="confirmMessage" class="text-muted mb-0"></p>
+          <ul id="confirmList" class="confirm-list" hidden></ul>
         </div>
         <div class="modal-footer justify-content-center border-0 pt-0">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Avbryt</button>

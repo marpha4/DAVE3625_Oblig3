@@ -43,6 +43,19 @@
   background: #adb5bd;
 }
 
+/* Egen boks rundt skjemaet, så det skiller seg fra listen */
+.add-item-box {
+  background: #f1f4f9;
+  border: 1px solid #e1e6ef;
+  border-radius: 8px;
+  padding: 14px 16px 16px;
+}
+
+.add-item-box .form-control,
+.add-item-box .form-select {
+  background-color: #fff;
+}
+
 /* Overskrift for hver kategori i handlelisten */
 .category-heading {
   font-size: 0.8rem;
@@ -53,6 +66,23 @@
   margin: 8px 0 0;
   padding-bottom: 6px;
   border-bottom: 1px solid #dee2e6;
+}
+
+/* Varenavn og antall. Streken over kjøpte varer tegnes som én
+   linje over hele bredden, så den ikke brytes mellom navn og antall */
+.item-name {
+  position: relative;
+  display: inline-block;
+}
+
+.item-name.done::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 55%;
+  height: 1px;
+  background: currentColor;
 }
 
 /* Kommentar på en vare */
@@ -67,6 +97,16 @@
 /* Bekreftelsesvinduet skal ligge over andre vinduer */
 .confirm-modal {
   z-index: 1065;
+}
+
+.confirm-list {
+  text-align: left;
+  margin: 12px 0 0;
+  padding: 10px 12px 10px 30px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .modal-backdrop.show ~ .modal-backdrop.show {
