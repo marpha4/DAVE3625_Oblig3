@@ -117,3 +117,104 @@
 .dropdown-menu {
   min-width: 220px;
 }
+
+/* Mer luft på sidene på små skjermer */
+@media (max-width: 575.98px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  main .card-body {
+    padding: 18px;
+  }
+
+  .add-item-box {
+    padding: 14px;
+  }
+}
+
+/* Kategorimeny */
+.category-toggle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-menu {
+  width: 100%;
+  min-width: 200px;
+  max-height: min(360px, 60vh);
+  overflow-y: auto;
+}
+
+.category-icon {
+  width: 16px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.dropdown-item.active .category-icon {
+  color: inherit;
+}
+
+/* Mer luft på sidene på små skjermer */
+@media (max-width: 576px) {
+  .page-tabs .container,
+  .navbar .container,
+  main.container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .card-body {
+    padding: 20px 18px;
+  }
+
+  .add-item-box {
+    padding: 14px;
+  }
+}
+
+/* Meny for å velge ansvarlig */
+.member-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.member-menu {
+  width: 100%;
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+}
+
+/* Hvem som gjorde en oppgave */
+.chore-done-by {
+  color: #198754;
+}
+
+/* Mindre profilbilde i menyen, så feltet får samme høyde som de andre */
+.member-toggle .avatar.small {
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+}
+
+/* Faner under headeren */
+.page-tabs .nav-link {
+  color: #6c757d;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.page-tabs .nav-link.active {
+  color: #0d6efd;
+}
+
+.page-tabs .badge {
+  font-weight: 600;
+  color: #495057;
+}
