@@ -73,8 +73,27 @@ let shoppingItems = load(SHOPPING_KEY, []).map((item) => ({
   quantity: 1,
   category: "annet",
   comment: "",
+  // id er tidspunktet varen ble laget, så eldre varer får riktig dato
+  createdAt: Number(item.id) || Date.now(),
   ...item,
 }));
+
+// Formaterer et tidspunkt, f.eks. «i dag 21:22», «i går 18:05» eller «20. okt. 14:10»
+function formatDate(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const time = date.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+
+  if (daysAgo === 0) return `i dag ${time}`;
+  if (daysAgo === 1) return `i går ${time}`;
+
+  const options = { day: "numeric", month: "short" };
+  if (date.getFullYear() !== now.getFullYear()) options.year = "numeric";
+  return `${date.toLocaleDateString("nb-NO", options)} ${time}`;
+}
 
 function load(key, fallback) {
   try {
@@ -346,13 +365,25 @@ function createShoppingItem(item) {
 
   // Viser hvem som la til varen
   const addedBy = document.createElement("div");
-  addedBy.className = "small text-muted d-flex align-items-center gap-1";
+  addedBy.className = "small text-muted d-flex align-items-baseline gap-1";
   const member = members.find((m) => m.id === item.addedBy);
   const dot = document.createElement("span");
   dot.className = "member-dot";
   dot.style.background = member ? member.color : item.addedByColor;
   const who = document.createElement("span");
-  who.textContent = `Lagt til av ${member ? member.name : item.addedByName}`;
+  // «Lagt til av» og datoen står i samme tekst, så linjen brytes naturlig på mobil
+  const addedByName = member ? member.name : item.addedByName;
+
+  // Hvis den som la til varen også endret den sist, vises «Endret» på samme linje.
+  // Hvis noen andre endret den, vises det på en egen linje under.
+  // Eldre endringer uten lagret person regnes som gjort av den som la til varen
+  const editedBySelf =
+    Boolean(item.updatedAt) && (!item.updatedBy || item.updatedBy === item.addedBy);
+  const lineDate = editedBySelf ? item.updatedAt : item.createdAt;
+  who.textContent = editedBySelf
+    ? `Lagt til av ${addedByName} · Endret: ${formatDate(lineDate)}`
+    : `Lagt til av ${addedByName} · ${formatDate(lineDate)}`;
+  who.title = new Date(lineDate).toLocaleString("nb-NO");
   addedBy.append(dot, who);
 
   // Varenavn med antall til høyre. Streken settes på hele linjen
@@ -378,6 +409,23 @@ function createShoppingItem(item) {
   }
 
   text.appendChild(addedBy);
+
+  // Endret av en annen enn den som la til varen
+  if (item.updatedAt && !editedBySelf) {
+    const editor = members.find((m) => m.id === item.updatedBy);
+    const editorName = editor ? editor.name : item.updatedByName;
+
+    const updated = document.createElement("div");
+    updated.className = "small text-muted d-flex align-items-baseline gap-1";
+    const editorDot = document.createElement("span");
+    editorDot.className = "member-dot";
+    editorDot.style.background = editor ? editor.color : item.updatedByColor;
+    const editorText = document.createElement("span");
+    editorText.textContent = `Endret av ${editorName} · ${formatDate(item.updatedAt)}`;
+    editorText.title = new Date(item.updatedAt).toLocaleString("nb-NO");
+    updated.append(editorDot, editorText);
+    text.appendChild(updated);
+  }
 
   const editBtn = document.createElement("button");
   editBtn.type = "button";
@@ -417,6 +465,7 @@ function addItem(name, quantity, category, comment = "") {
   );
   if (existing) {
     existing.quantity = Math.min(99, existing.quantity + amount);
+    markUpdated(existing, current);
     if (comment.trim()) existing.comment = comment.trim();
     render();
     return;
@@ -433,8 +482,19 @@ function addItem(name, quantity, category, comment = "") {
     // Lagrer navn og farge i tilfelle medlemmet fjernes senere
     addedByName: current.name,
     addedByColor: current.color,
+    createdAt: Date.now(),
   });
   render();
+}
+
+// Lagrer når og av hvem en vare sist ble endret
+function markUpdated(item, member) {
+  item.updatedAt = Date.now();
+  if (!member) return;
+  item.updatedBy = member.id;
+  // Navn og farge lagres i tilfelle medlemmet fjernes senere
+  item.updatedByName = member.name;
+  item.updatedByColor = member.color;
 }
 
 function openEditItem(id) {
@@ -456,10 +516,20 @@ editItemForm.addEventListener("submit", (event) => {
   const name = editName.value.trim();
   if (!item || !name) return;
 
-  item.name = name;
-  item.quantity = Math.min(99, Math.max(1, parseInt(editQuantity.value, 10) || 1));
-  item.category = editCategory.value;
-  item.comment = editComment.value.trim();
+  const changes = {
+    name,
+    quantity: Math.min(99, Math.max(1, parseInt(editQuantity.value, 10) || 1)),
+    category: editCategory.value,
+    comment: editComment.value.trim(),
+  };
+
+  // Oppdaterer bare «Endret» datoen hvis noe faktisk ble endret
+  const changed = Object.keys(changes).some((key) => changes[key] !== item[key]);
+  if (changed) {
+    Object.assign(item, changes);
+    markUpdated(item, getCurrentMember());
+  }
+
   bootstrap.Modal.getInstance(editItemModal).hide();
   render();
 });

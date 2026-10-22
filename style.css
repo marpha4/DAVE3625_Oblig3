@@ -41,6 +41,7 @@
   height: 10px;
   border-radius: 50%;
   background: #adb5bd;
+  flex-shrink: 0;
 }
 
 /* Egen boks rundt skjemaet, så det skiller seg fra listen */
