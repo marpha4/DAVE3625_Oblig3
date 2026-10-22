@@ -40,12 +40,55 @@
   </nav>
 
   <main class="container py-4" style="max-width: 720px;">
-    <div class="card border-0 shadow-sm">
+    <h2 id="welcomeText" class="h4 mb-4">Velkommen</h2>
+
+    <!-- Handleliste -->
+    <section class="card border-0 shadow-sm">
       <div class="card-body">
-        <h2 id="welcomeText" class="h4">Velkommen</h2>
-        <p class="text-muted mb-0">Her kommer handleliste, husarbeid og timeplan.</p>
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <i class="bi bi-cart3 fs-5 text-primary"></i>
+          <h3 class="h5 mb-0 flex-grow-1">Handleliste</h3>
+          <span class="small text-muted">Totalt antall varer: <strong id="shoppingCount" class="text-body">0</strong></span>
+        </div>
+
+        <div class="add-item-box mb-4">
+        <h4 class="h6 mb-2">Legg til vare</h4>
+        <form id="shoppingForm" class="row g-2 align-items-end">
+          <div class="col-12 col-md-6">
+            <label for="itemInput" class="form-label small fw-semibold mb-1">Vare</label>
+            <input type="text" id="itemInput" class="form-control" placeholder="Hva er tomt? F.eks. melk" maxlength="50" required>
+          </div>
+          <div class="col-4 col-md-2">
+            <label for="quantityInput" class="form-label small fw-semibold mb-1">Antall</label>
+            <input type="number" id="quantityInput" class="form-control" value="1" min="1" max="99" required>
+          </div>
+          <div class="col-8 col-md-4">
+            <label for="categoryInput" class="form-label small fw-semibold mb-1">Kategori</label>
+            <select id="categoryInput" class="form-select"></select>
+          </div>
+          <div class="col-12">
+            <label for="commentInput" class="form-label small fw-semibold mb-1">Kommentar <span class="fw-normal text-muted">(valgfritt)</span></label>
+            <input type="text" id="commentInput" class="form-control" placeholder="F.eks. haster, trengs til fredag" maxlength="80">
+          </div>
+          <div class="col-12 d-grid d-sm-flex justify-content-sm-center mt-3">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-plus-lg"></i> Legg til varen
+            </button>
+          </div>
+        </form>
+        <p id="shoppingNoMember" class="text-muted small mt-2 mb-0" hidden>Legg til et medlem først for å bruke handlelisten.</p>
+        </div>
+
+        <div id="shoppingList"></div>
+        <p id="shoppingEmpty" class="text-muted text-center my-3">Handlelisten er tom.</p>
+
+        <div class="text-end mt-3">
+          <button id="clearCheckedBtn" type="button" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash"></i> Fjern avkryssede
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <!-- Medlemsvindu -->
@@ -60,13 +103,73 @@
           <ul id="memberList" class="list-group mb-3"></ul>
           <p id="emptyText" class="text-muted">Ingen medlemmer ennå. Legg til den første under.</p>
 
-          <form id="memberForm" class="d-flex gap-2">
-            <input type="text" id="nameInput" class="form-control" placeholder="Navn" maxlength="30" required>
-            <input type="color" id="colorInput" class="form-control form-control-color" value="#0d6efd" title="Velg farge">
+          <form id="memberForm" class="d-flex gap-2 align-items-end">
+            <div class="flex-grow-1">
+              <label for="nameInput" class="form-label small fw-semibold mb-1">Navn</label>
+              <input type="text" id="nameInput" class="form-control" placeholder="F.eks. Kari" maxlength="30" required>
+            </div>
+            <div>
+              <label for="colorInput" class="form-label small fw-semibold mb-1">Farge</label>
+              <input type="color" id="colorInput" class="form-control form-control-color" value="#0d6efd">
+            </div>
             <button type="submit" class="btn btn-primary text-nowrap">
               <i class="bi bi-plus-lg"></i> Legg til
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vindu for å endre en vare -->
+  <div class="modal fade" id="editItemModal" tabindex="-1" aria-labelledby="editItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="editItemForm" class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="editItemModalLabel">Endre vare</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Lukk"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editName" class="form-label small fw-semibold mb-1">Vare</label>
+            <input type="text" id="editName" class="form-control" maxlength="50" required>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <label for="editQuantity" class="form-label small fw-semibold mb-1">Antall</label>
+              <input type="number" id="editQuantity" class="form-control" min="1" max="99" required>
+            </div>
+            <div class="col-8">
+              <label for="editCategory" class="form-label small fw-semibold mb-1">Kategori</label>
+              <select id="editCategory" class="form-select"></select>
+            </div>
+          </div>
+          <div class="mt-3">
+            <label for="editComment" class="form-label small fw-semibold mb-1">Kommentar <span class="fw-normal text-muted">(valgfritt)</span></label>
+            <input type="text" id="editComment" class="form-control" placeholder="F.eks. haster, trengs til fredag" maxlength="80">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Avbryt</button>
+          <button type="submit" class="btn btn-primary">Lagre endringer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bekreftelse før sletting -->
+  <div class="modal fade confirm-modal" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-body text-center p-4">
+          <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+          <h2 class="h5 mt-2" id="confirmModalLabel">Er du sikker?</h2>
+          <p id="confirmMessage" class="text-muted mb-0"></p>
+          <ul id="confirmList" class="confirm-list" hidden></ul>
+        </div>
+        <div class="modal-footer justify-content-center border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Avbryt</button>
+          <button type="button" id="confirmOk" class="btn btn-danger">Slett</button>
         </div>
       </div>
     </div>
