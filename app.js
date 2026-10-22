@@ -282,10 +282,14 @@ function renderProfileMenu() {
   profileMenu.append(divider, manage);
 }
 
+// Id til medlemmet som får nytt navn akkurat nå, eller null
+let editingMemberId = null;
+
 function renderMemberList() {
   memberList.innerHTML = "";
   emptyText.hidden = members.length > 0;
   memberList.hidden = members.length === 0;
+  document.getElementById("colorHint").hidden = members.length === 0;
 
   members.forEach((m) => {
     const li = document.createElement("li");
@@ -295,7 +299,33 @@ function renderMemberList() {
     name.className = "flex-grow-1";
     name.textContent = m.name;
 
-    li.append(createAvatar(m, true), name);
+    // Fargesirkelen er en knapp for å bytte farge. Et usynlig fargefelt
+    // ligger over sirkelen, så nettleserens fargevelger åpnes ved klikk
+    const colorPicker = document.createElement("label");
+    colorPicker.className = "avatar-color";
+    colorPicker.title = `Bytt farge for ${m.name}`;
+    const avatar = createAvatar(m, true);
+    const edit = document.createElement("i");
+    edit.className = "bi bi-pencil-fill avatar-edit";
+    const colorField = document.createElement("input");
+    colorField.type = "color";
+    colorField.value = m.color;
+    colorField.setAttribute("aria-label", `Bytt farge for ${m.name}`);
+    // Viser fargen mens man velger, og lagrer når man er ferdig
+    colorField.addEventListener("input", () => (avatar.style.background = colorField.value));
+    colorField.addEventListener("change", () => changeMemberColor(m.id, colorField.value));
+    colorPicker.append(avatar, edit, colorField);
+
+    li.append(colorPicker);
+
+    // Når navnet endres, byttes navnet ut med et skjema
+    if (m.id === editingMemberId) {
+      li.appendChild(createRenameForm(m));
+      memberList.appendChild(li);
+      return;
+    }
+
+    li.appendChild(name);
 
     if (m.id === currentId) {
       const badge = document.createElement("span");
@@ -304,6 +334,16 @@ function renderMemberList() {
       li.appendChild(badge);
     }
 
+    const renameBtn = document.createElement("button");
+    renameBtn.type = "button";
+    renameBtn.className = "btn btn-sm btn-outline-primary";
+    renameBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+    renameBtn.title = `Endre navn på ${m.name}`;
+    renameBtn.addEventListener("click", () => {
+      editingMemberId = m.id;
+      renderMemberList();
+    });
+
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn btn-sm btn-outline-danger";
@@ -311,9 +351,98 @@ function renderMemberList() {
     removeBtn.title = `Fjern ${m.name}`;
     removeBtn.addEventListener("click", () => removeMember(m.id));
 
-    li.appendChild(removeBtn);
+    li.append(renameBtn, removeBtn);
     memberList.appendChild(li);
   });
+}
+
+function createRenameForm(member) {
+  const form = document.createElement("form");
+  form.className = "d-flex flex-grow-1 gap-1 align-items-start";
+
+  const field = document.createElement("div");
+  field.className = "flex-grow-1";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "form-control form-control-sm";
+  input.value = member.name;
+  input.maxLength = 30;
+  input.required = true;
+  input.setAttribute("aria-label", `Nytt navn for ${member.name}`);
+  const feedback = document.createElement("div");
+  feedback.className = "invalid-feedback";
+  field.append(input, feedback);
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "submit";
+  saveBtn.className = "btn btn-sm btn-primary";
+  saveBtn.innerHTML = '<i class="bi bi-check-lg"></i>';
+  saveBtn.title = "Lagre navn";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btn btn-sm btn-outline-secondary";
+  cancelBtn.innerHTML = '<i class="bi bi-x-lg"></i>';
+  cancelBtn.title = "Avbryt";
+
+  const cancel = () => {
+    editingMemberId = null;
+    renderMemberList();
+  };
+  cancelBtn.addEventListener("click", cancel);
+
+  // Escape avbryter endringen uten å lukke hele vinduet
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      cancel();
+    }
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const error = renameMember(member.id, input.value);
+    if (error) {
+      input.classList.add("is-invalid");
+      feedback.textContent = error;
+      input.focus();
+    }
+  });
+  input.addEventListener("input", () => input.classList.remove("is-invalid"));
+
+  form.append(field, saveBtn, cancelBtn);
+  // Fokus i feltet med teksten markert, så det er lett å skrive nytt navn
+  requestAnimationFrame(() => {
+    input.focus();
+    input.select();
+  });
+  return form;
+}
+
+// Returnerer en feilmelding hvis navnet ikke kan brukes
+function renameMember(id, name) {
+  const member = members.find((m) => m.id === id);
+  const trimmed = name.trim();
+  if (!member) return null;
+  if (!trimmed) return "Navnet kan ikke være tomt.";
+
+  const taken = members.some(
+    (m) => m.id !== id && m.name.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (taken) return "Det finnes allerede et medlem med det navnet.";
+
+  member.name = trimmed;
+  editingMemberId = null;
+  render();
+  return null;
+}
+
+function changeMemberColor(id, color) {
+  const member = members.find((m) => m.id === id);
+  if (!member || member.color === color) return;
+  member.color = color;
+  render();
 }
 
 function addMember(name, color) {
@@ -987,6 +1116,12 @@ window.addEventListener("hashchange", showPage);
 
 // Setter fokus på navnefeltet når vinduet åpnes
 memberModal.addEventListener("shown.bs.modal", () => nameInput.focus());
+memberModal.addEventListener("hidden.bs.modal", () => {
+  if (editingMemberId) {
+    editingMemberId = null;
+    renderMemberList();
+  }
+});
 
 memberForm.addEventListener("submit", (event) => {
   event.preventDefault();
