@@ -34,6 +34,45 @@
   font-size: 0.8rem;
 }
 
+/* Liten fargeprikk for hvem som la til en vare */
+.member-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #adb5bd;
+}
+
+/* Overskrift for hver kategori i handlelisten */
+.category-heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin: 8px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Kommentar på en vare */
+.item-comment {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #b35900;
+  margin: 2px 0;
+}
+
+/* Bekreftelsesvinduet skal ligge over andre vinduer */
+.confirm-modal {
+  z-index: 1065;
+}
+
+.modal-backdrop.show ~ .modal-backdrop.show {
+  z-index: 1060;
+}
+
 .dropdown-menu {
   min-width: 220px;
 }
