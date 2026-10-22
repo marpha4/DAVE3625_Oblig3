@@ -622,6 +622,7 @@ const choresCount = document.getElementById("choresCount");
 const choresNoMember = document.getElementById("choresNoMember");
 const filterButtons = document.querySelectorAll("[data-filter]");
 const choreCommentInput = document.getElementById("choreCommentInput");
+const clearDoneChoresBtn = document.getElementById("clearDoneChoresBtn");
 
 // Elementer i vinduet for å endre en oppgave
 const editChoreModal = document.getElementById("editChoreModal");
@@ -715,6 +716,7 @@ function renderChores() {
     choreFilter === "mine" ? "Du har ingen oppgaver." : "Ingen oppgaver ennå.";
 
   choresCount.textContent = chores.filter((c) => !c.done).length;
+  clearDoneChoresBtn.disabled = !chores.some((c) => c.done);
 }
 
 // Lager en linje med fargeprikk og tekst for et medlem
@@ -895,6 +897,27 @@ editChoreForm.addEventListener("submit", (event) => {
   bootstrap.Modal.getInstance(editChoreModal).hide();
   render();
 });
+
+// Sletter alle fullførte oppgaver, uansett hvilket filter som er valgt
+async function clearDoneChores() {
+  const done = chores.filter((c) => c.done);
+  if (done.length === 0) return;
+  const text =
+    done.length === 1
+      ? "Denne fullførte oppgaven blir slettet:"
+      : `Disse ${done.length} fullførte oppgavene blir slettet:`;
+  const names = done.map((c) => {
+    const member = members.find((m) => m.id === c.doneBy);
+    const doneBy = member ? member.name : c.doneByName;
+    return doneBy ? `${c.title} (gjort av ${doneBy})` : c.title;
+  });
+  const ok = await confirmAction(text, "Slett", names);
+  if (!ok) return;
+  chores = chores.filter((c) => !c.done);
+  render();
+}
+
+clearDoneChoresBtn.addEventListener("click", clearDoneChores);
 
 async function deleteChore(id) {
   const chore = chores.find((c) => c.id === id);
