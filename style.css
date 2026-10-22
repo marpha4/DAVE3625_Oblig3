@@ -1,0 +1,39 @@
+/* Runde profilbilder med forbokstav */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #adb5bd;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.avatar.small {
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+}
+
+/* Like store knapper i headeren */
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.header-btn .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+}
+
+.dropdown-menu {
+  min-width: 220px;
+}
